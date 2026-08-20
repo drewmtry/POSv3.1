@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Restaurant POS</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --card: #ffffff;
+      --card-alt: #f8fafc;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #f97316;
+      --accent-dark: #ea580c;
+      --green: #16a34a;
+      --red: #dc2626;
+      --border: #dbe4f0;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b 40%, #0b1120);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+    .app-shell {
+      min-height: 100vh;
+      padding: 18px;
+    }
+    .card {
+      background: rgba(255,255,255,0.96);
+      color: #0f172a;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .card.dark {
+      background: rgba(17,24,39,0.94);
+      color: var(--text);
+    }
+    .login-wrap {
+      max-width: 420px;
+      margin: 7vh auto 0;
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .brand h1 { margin: 0 0 8px; font-size: 2rem; }
+    .brand p { margin: 0; color: var(--muted); }
+    form { display: grid; gap: 12px; }
+    label { font-weight: 700; font-size: 0.9rem; }
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    button {
+      cursor: pointer;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      transition: 0.2s ease;
+    }
+    button:hover { background: var(--accent-dark); }
+    button.secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    button.secondary:hover { background: #cbd5e1; }
+    button.success { background: var(--green); }
+    button.danger { background: var(--red); }
+    button.ghost {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(249,115,22,0.35);
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .title-block h2, .title-block p { margin: 0; }
+    .title-block p { color: var(--muted); margin-top: 5px; }
+    .top-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .role-chip, .status-chip {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .role-chip { background: rgba(249,115,22,0.18); color: #fed7aa; }
+    .status-chip.active { background: rgba(22,163,74,0.18); color: #bbf7d0; }
+    .status-chip.inactive { background: rgba(220,38,38,0.18); color: #fecaca; }
+    .nav-buttons, .tab-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .nav-buttons button.active, .tab-buttons button.active {
+      background: white;
+      color: #0f172a;
+    }
+    .content {
+      display: grid;
+      gap: 16px;
+    }
+    .pos-layout {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .menu-controls, .inline-form, .stats-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    .menu-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      margin-top: 12px;
+    }
+    .menu-item {
+      background: var(--card-alt);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .menu-item h4, .menu-item p { margin: 0; }
+    .muted { color: #64748b; }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    th { color: #475569; font-size: 0.82rem; text-transform: uppercase; }
+    .cart-summary {
+      display: grid;
+      gap: 10px;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .receipt {
+      background: #fff;
+      color: #111827;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: inset 0 0 0 1px #e5e7eb;
+    }
+    .receipt h3, .receipt p { margin: 0 0 8px; }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .stats-grid .stat {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .stat h4, .stat p { margin: 0; }
+    .stat p { margin-top: 8px; font-size: 1.3rem; font-weight: 700; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    dialog {
+      border: none;
+      border-radius: 18px;
+      width: min(560px, calc(100vw - 24px));
+      padding: 0;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.38);
+    }
+    dialog::backdrop { background: rgba(15, 23, 42, 0.65); }
+    .dialog-card { padding: 18px; }
+    .dialog-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .dialog-head h3 { margin: 0; }
+    .footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .notice {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .notice.success { background: rgba(22,163,74,0.18); color: #166534; }
+    .notice.error { background: rgba(220,38,38,0.18); color: #991b1b; }
+    .credentials {
+      margin-top: 14px;
+      padding: 14px;
+      background: rgba(15,23,42,0.05);
+      border-radius: 14px;
+      font-size: 0.92rem;
+    }
+    .split-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px) {
+      .pos-layout, .two-col { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      .no-print, dialog, #managerSection, #developerSection, #posControls, #loginView, .topbar, .nav-buttons { display: none !important; }
+      #receiptPanel { display: block !important; }
+      .receipt { box-shadow: none; border: 1px solid #d1d5db; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section id="loginView" class="login-wrap">
+      <div class="brand">
+        <h1>Restaurant POS</h1>
+        <p>Fast point-of-sale, management, inventory and subscription control.</p>
+      </div>
+      <div class="card">
+        <div id="loginNotice"></div>
+        <form id="loginForm">
+          <div>
+            <label for="username">Username</label>
+            <input id="username" name="username" placeholder="Enter username" required />
+          </div>
+          <div>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Enter password" required />
+          </div>
+          <button type="submit">Login</button>
+        </form>
+        <div class="credentials">
+          <strong>First-run credentials</strong><br />
+          User passwords are generated on first startup and printed in the server console.<br />
+          Optional env vars: POS_ADMIN_PASSWORD, POS_DEVELOPER_PASSWORD, POS_WAITER_PASSWORD, POS_CASHIER_PASSWORD.
+        </div>
+      </div>
+    </section>
+
+    <section id="mainView" class="hidden">
+      <div class="card dark">
+        <div class="topbar no-print">
+          <div class="title-block">
+            <h2 id="restaurantTitle">Restaurant POS</h2>
+            <p id="subscriptionStatus">Subscription status</p>
+          </div>
+          <div class="top-actions">
+            <span class="role-chip" id="roleChip"></span>
+            <span id="userDisplay"></span>
+            <button class="secondary" id="logoutBtn">Logout</button>
+          </div>
+        </div>
+        <div class="nav-buttons no-print" id="navButtons"></div>
+        <div id="mainNotice"></div>
+
+        <section id="posSection" class="content hidden">
+          <div class="pos-layout">
+            <div class="card">
+              <div class="toolbar" id="posControls">
+                <h3 style="margin:0;">Order Taking</h3>
+                <button class="secondary" id="refreshMenuBtn" type="button">Refresh Menu</button>
+              </div>
+              <div class="menu-controls">
+                <div>
+                  <label for="posSearch">Search food</label>
+                  <input id="posSearch" placeholder="Burger, pasta..." />
+                </div>
+                <div>
+                  <label for="posCategoryFilter">Category</label>
+                  <select id="posCategoryFilter"></select>
+                </div>
+                <div>
+                  <label for="tableNumber">Table / Reference</label>
+                  <input id="tableNumber" placeholder="T1 / Counter" />
+                </div>
+              </div>
+              <div id="menuGrid" class="menu-grid"></div>
+            </div>
+
+            <div class="grid">
+              <div class="card">
+                <h3 style="margin-top:0;">Cart</h3>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="cartTable"></tbody>
+                  </table>
+                </div>
+                <div class="cart-summary">
+                  <div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">0.00</strong></div>
+                  <div class="summary-row"><span>Discount</span><strong id="cartDiscount">0.00</strong></div>
+                  <div class="summary-row"><span>Total</span><strong id="cartTotal">0.00</strong></div>
+                </div>
+                <div class="footer-actions no-print">
+                  <button type="button" class="secondary" id="clearCartBtn">Clear Cart</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3 style="margin-top:0;">Checkout</h3>
+                <div class="inline-form">
+                  <div>
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod">
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="online">Online</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="tipsInput">Tips</label>
+                    <input id="tipsInput" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                  <div>
+                    <label for="splitCount">Split Bills</label>
+                    <input id="splitCount" type="number" min="1" step="1" value="1" />
+                  </div>
+                  <div>
+                    <label for="amountPaid">Amount Paid</label>
+                    <input id="amountPaid" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                </div>
+                <div id="splitPreview" class="split-grid"></div>
+                <div class="cart-summary" style="margin-top:12px;">
+                  <div class="summary-row"><span>Grand Total</span><strong id="checkoutTotal">0.00</strong></div>
+                  <div class="summary-row"><span>Change</span><strong id="changeDisplay">0.00</strong></div>
+                </div>
+                <div class="footer-actions no-print">
+                  <button type="button" class="success" id="placeOrderBtn">Place Order</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="receiptPanel" class="card hidden">
+            <div class="toolbar no-print">
+              <h3 style="margin:0;">Receipt</h3>
+              <button type="button" id="printReceiptBtn">Print Receipt</button>
+            </div>
+            <div id="receiptContent" class="receipt"></div>
+          </div>
+        </section>
+
+        <section id="managerSection" class="content hidden">
+          <div class="tab-buttons no-print" id="managerTabs"></div>
+          <div id="managerPanels"></div>
+        </section>
+
+        <section id="developerSection" class="content hidden">
+          <div class="card">
+            <div class="toolbar">
+              <h3 style="margin:0;">Subscription Management</h3>
+              <button type="button" id="openSubscriptionDialogBtn">Update Subscription</button>
+            </div>
+            <div id="developerSubscriptionCard"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="userDialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><h3 id="userDialogTitle">Add User</h3><button type="button" class="secondary" onclick="app.closeDialog('userDialog')">Close</button></div>
+      <form id="userForm">
+        <input type="hidden" id="userId" />
+        <div class="two-col">
+          <div><label>Username</label><input id="userUsername" required /></div>
+          <div><label>Role</label><select id="userRole"><option>manager</option><option>waiter</option><option>cashier</option><option>developer</option></select></div>
+        </div>
+        <div class="two-col">
+          <div><label>Password</label><input id="userPassword" type="password" placeholder="Leave blank to keep current password" /></div>
+          <div><label>Status</label><select id="userEnabled"><option value="true">Enabled</option><option value="false">Disabled</option></select></div>
+        </div>
+        <div class="footer-actions"><button type="button" class="secondary" onclick="app.closeDialog('userDialog')">Cancel</button><button type="submit">Save User</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="categoryDialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><h3 id="categoryDialogTitle">Add Category</h3><button type="button" class="secondary" onclick="app.closeDialog('categoryDialog')">Close</button></div>
+      <form id="categoryForm">
+        <input type="hidden" id="categoryId" />
+        <div><label>Name</label><input id="categoryName" required /></div>
+        <div class="two-col">
+          <div><label>Display System</label><select id="categoryDisplay"><option value="kitchen">Kitchen</option><option value="bar">Bar</option><option value="both">Both</option></select></div>
+          <div><label>Status</label><select id="categoryEnabled"><option value="true">Enabled</option><option value="false">Disabled</option></select></div>
+        </div>
+        <div class="footer-actions"><button type="button" class="secondary" onclick="app.closeDialog('categoryDialog')">Cancel</button><button type="submit">Save Category</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="foodDialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><h3 id="foodDialogTitle">Add Food Item</h3><button type="button" class="secondary" onclick="app.closeDialog('foodDialog')">Close</button></div>
+      <form id="foodForm">
+        <input type="hidden" id="foodId" />
+        <div><label>Name</label><input id="foodName" required /></div>
+        <div class="two-col">
+          <div><label>Price</label><input id="foodPrice" type="number" step="0.01" min="0" required /></div>
+          <div><label>Discount %</label><input id="foodDiscount" type="number" step="0.01" min="0" value="0" /></div>
+        </div>
+        <div class="two-col">
+          <div><label>Category</label><select id="foodCategory"></select></div>
+          <div><label>Display System</label><select id="foodDisplay"><option value="kitchen">Kitchen</option><option value="bar">Bar</option><option value="both">Both</option></select></div>
+        </div>
+        <div><label>Status</label><select id="foodEnabled"><option value="true">Enabled</option><option value="false">Disabled</option></select></div>
+        <div class="footer-actions"><button type="button" class="secondary" onclick="app.closeDialog('foodDialog')">Cancel</button><button type="submit">Save Food Item</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="inventoryDialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><h3 id="inventoryDialogTitle">Add Inventory</h3><button type="button" class="secondary" onclick="app.closeDialog('inventoryDialog')">Close</button></div>
+      <form id="inventoryForm">
+        <input type="hidden" id="inventoryId" />
+        <div class="two-col">
+          <div><label>Food Item</label><select id="inventoryFood"></select></div>
+          <div><label>Date</label><input id="inventoryDate" type="date" required /></div>
+        </div>
+        <div class="two-col">
+          <div><label>Beginning Stock</label><input id="inventoryBeginning" type="number" step="0.01" min="0" value="0" /></div>
+          <div><label>Stock In / Replenish</label><input id="inventoryIn" type="number" step="0.01" min="0" value="0" /></div>
+        </div>
+        <div class="two-col">
+          <div><label>Stock Out / Used</label><input id="inventoryOut" type="number" step="0.01" min="0" value="0" /></div>
+          <div><label>Ending Stock</label><input id="inventoryEnding" type="number" step="0.01" min="0" value="0" readonly /></div>
+        </div>
+        <div class="footer-actions"><button type="button" class="secondary" onclick="app.closeDialog('inventoryDialog')">Cancel</button><button type="submit">Save Inventory</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="subscriptionDialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><h3>Subscription</h3><button type="button" class="secondary" onclick="app.closeDialog('subscriptionDialog')">Close</button></div>
+      <form id="subscriptionForm">
+        <div><label>Plan Name</label><input id="subscriptionPlan" required /></div>
+        <div><label>Expiry Date</label><input id="subscriptionExpiry" type="date" required /></div>
+        <div class="footer-actions"><button type="button" class="secondary" onclick="app.closeDialog('subscriptionDialog')">Cancel</button><button type="submit">Save Subscription</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <script>
+    const app = {
+      state: {
+        token: localStorage.getItem('pos_token') || '',
+        user: JSON.parse(localStorage.getItem('pos_user') || 'null'),
+        settings: { restaurant_name: 'Restaurant POS', currency: 'USD' },
+        categories: [],
+        foodItems: [],
+        users: [],
+        inventory: [],
+        orders: [],
+        subscription: null,
+        cart: [],
+        currentView: 'pos',
+        managerTab: 'users',
+        lastReceipt: null,
+        reports: null
+      },
+
+      init() {
+        this.cache();
+        this.bindEvents();
+        if (this.state.token) {
+          this.bootstrap();
+        } else {
+          this.renderAuth();
+        }
+      },
+
+      cache() {
+        this.el = {
+          loginView: document.getElementById('loginView'),
+          mainView: document.getElementById('mainView'),
+          loginForm: document.getElementById('loginForm'),
+          loginNotice: document.getElementById('loginNotice'),
+          mainNotice: document.getElementById('mainNotice'),
+          restaurantTitle: document.getElementById('restaurantTitle'),
+          subscriptionStatus: document.getElementById('subscriptionStatus'),
+          roleChip: document.getElementById('roleChip'),
+          userDisplay: document.getElementById('userDisplay'),
+          logoutBtn: document.getElementById('logoutBtn'),
+          navButtons: document.getElementById('navButtons'),
+          posSection: document.getElementById('posSection'),
+          managerSection: document.getElementById('managerSection'),
+          developerSection: document.getElementById('developerSection'),
+          managerTabs: document.getElementById('managerTabs'),
+          managerPanels: document.getElementById('managerPanels'),
+          posSearch: document.getElementById('posSearch'),
+          posCategoryFilter: document.getElementById('posCategoryFilter'),
+          menuGrid: document.getElementById('menuGrid'),
+          cartTable: document.getElementById('cartTable'),
+          cartSubtotal: document.getElementById('cartSubtotal'),
+          cartDiscount: document.getElementById('cartDiscount'),
+          cartTotal: document.getElementById('cartTotal'),
+          tableNumber: document.getElementById('tableNumber'),
+          paymentMethod: document.getElementById('paymentMethod'),
+          tipsInput: document.getElementById('tipsInput'),
+          splitCount: document.getElementById('splitCount'),
+          amountPaid: document.getElementById('amountPaid'),
+          checkoutTotal: document.getElementById('checkoutTotal'),
+          changeDisplay: document.getElementById('changeDisplay'),
+          splitPreview: document.getElementById('splitPreview'),
+          receiptPanel: document.getElementById('receiptPanel'),
+          receiptContent: document.getElementById('receiptContent'),
+          refreshMenuBtn: document.getElementById('refreshMenuBtn'),
+          clearCartBtn: document.getElementById('clearCartBtn'),
+          placeOrderBtn: document.getElementById('placeOrderBtn'),
+          printReceiptBtn: document.getElementById('printReceiptBtn'),
+          developerSubscriptionCard: document.getElementById('developerSubscriptionCard')
+        };
+      },
+
+      bindEvents() {
+        this.el.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        this.el.logoutBtn.addEventListener('click', () => this.logout());
+        this.el.posSearch.addEventListener('input', () => this.renderMenu());
+        this.el.posCategoryFilter.addEventListener('change', () => this.renderMenu());
+        this.el.tipsInput.addEventListener('input', () => this.renderCart());
+        this.el.amountPaid.addEventListener('input', () => this.renderCart());
+        this.el.splitCount.addEventListener('input', () => this.renderCart());
+        this.el.refreshMenuBtn.addEventListener('click', () => this.refreshData());
+        this.el.clearCartBtn.addEventListener('click', () => { this.state.cart = []; this.renderCart(); });
+        this.el.placeOrderBtn.addEventListener('click', () => this.placeOrder());
+        this.el.printReceiptBtn.addEventListener('click', () => window.print());
+
+        document.getElementById('userForm').addEventListener('submit', (e) => this.saveUser(e));
+        document.getElementById('categoryForm').addEventListener('submit', (e) => this.saveCategory(e));
+        document.getElementById('foodForm').addEventListener('submit', (e) => this.saveFood(e));
+        document.getElementById('inventoryForm').addEventListener('submit', (e) => this.saveInventory(e));
+        document.getElementById('subscriptionForm').addEventListener('submit', (e) => this.saveSubscription(e));
+        document.getElementById('openSubscriptionDialogBtn').addEventListener('click', () => this.openSubscriptionDialog());
+
+        ['inventoryBeginning', 'inventoryIn', 'inventoryOut'].forEach(id => {
+          document.getElementById(id).addEventListener('input', () => this.updateInventoryEnding());
+        });
+      },
+
+      async api(url, options = {}) {
+        const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+        if (this.state.token) headers.Authorization = 'Bearer ' + this.state.token;
+        const response = await fetch(url, { ...options, headers });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Request failed');
+        return data;
+      },
+
+      currency(value) {
+        const currency = this.state.settings.currency || 'USD';
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value || 0));
+      },
+
+      showNotice(target, message, type = 'success') {
+        const el = target === 'login' ? this.el.loginNotice : this.el.mainNotice;
+        if (!message) {
+          el.innerHTML = '';
+          return;
+        }
+        el.innerHTML = `<div class="notice ${type}">${this.escape(message)}</div>`;
+      },
+
+      renderAuth() {
+        this.el.loginView.classList.remove('hidden');
+        this.el.mainView.classList.add('hidden');
+      },
+
+      async handleLogin(event) {
+        event.preventDefault();
+        try {
+          const payload = {
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          };
+          const data = await this.api('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) });
+          this.state.token = data.token;
+          this.state.user = data.user;
+          this.state.settings = data.settings || this.state.settings;
+          this.state.subscription = data.subscription;
+          localStorage.setItem('pos_token', this.state.token);
+          localStorage.setItem('pos_user', JSON.stringify(this.state.user));
+          this.showNotice('login', '');
+          await this.bootstrap();
+        } catch (error) {
+          this.showNotice('login', error.message, 'error');
+        }
+      },
+
+      logout() {
+        localStorage.removeItem('pos_token');
+        localStorage.removeItem('pos_user');
+        this.state.token = '';
+        this.state.user = null;
+        this.state.cart = [];
+        this.state.lastReceipt = null;
+        this.renderAuth();
+      },
+
+      async bootstrap() {
+        try {
+          const me = await this.api('/api/me');
+          this.state.user = me.user;
+          this.state.settings = me.settings || this.state.settings;
+          this.state.subscription = me.subscription;
+          localStorage.setItem('pos_user', JSON.stringify(this.state.user));
+          await this.refreshData();
+          this.el.loginView.classList.add('hidden');
+          this.el.mainView.classList.remove('hidden');
+          this.renderShell();
+        } catch (error) {
+          this.logout();
+          this.showNotice('login', error.message, 'error');
+        }
+      },
+
+      async refreshData() {
+        const calls = [
+          this.api('/api/settings').then(data => { this.state.settings = data; }),
+          this.api('/api/categories').then(data => { this.state.categories = data; }),
+          this.api('/api/food-items').then(data => { this.state.foodItems = data; }),
+          this.api('/api/subscription').then(data => { this.state.subscription = data; })
+        ];
+        if (this.isManager()) {
+          calls.push(this.api('/api/users').then(data => { this.state.users = data; }));
+          calls.push(this.loadInventory());
+          calls.push(this.api('/api/orders').then(data => { this.state.orders = data; }));
+          calls.push(this.loadReports('daily'));
+        } else if (this.canUsePOS()) {
+          calls.push(this.api('/api/orders').then(data => { this.state.orders = data; }));
+        }
+        await Promise.all(calls);
+        this.renderShell();
+      },
+
+      async loadInventory() {
+        const date = this.today();
+        const data = await this.api(`/api/inventory?date=${date}`);
+        this.state.inventory = data;
+      },
+
+      today() {
+        return new Date().toISOString().slice(0, 10);
+      },
+
+      isManager() {
+        return this.state.user && this.state.user.role === 'manager';
+      },
+
+      isDeveloper() {
+        return this.state.user && this.state.user.role === 'developer';
+      },
+
+      canUsePOS() {
+        return this.state.user && ['manager', 'waiter', 'cashier'].includes(this.state.user.role);
+      },
+
+      renderShell() {
+        if (!this.state.user) return;
+        this.el.restaurantTitle.textContent = this.state.settings.restaurant_name || 'Restaurant POS';
+        const subscription = this.state.subscription;
+        if (subscription) {
+          const expired = new Date(subscription.expiry_date) < new Date();
+          this.el.subscriptionStatus.textContent = `${subscription.plan_name} · Expires ${new Date(subscription.expiry_date).toLocaleDateString()}${expired ? ' ⚠ EXPIRED' : ''}`;
+          this.el.subscriptionStatus.style.color = expired ? '#dc2626' : '';
+        } else {
+          this.el.subscriptionStatus.textContent = 'No subscription found';
+          this.el.subscriptionStatus.style.color = '#dc2626';
+        }
+        this.el.roleChip.textContent = this.state.user.role.toUpperCase();
+        this.el.userDisplay.textContent = this.state.user.username;
+
+        const nav = [];
+        if (this.canUsePOS()) nav.push({ key: 'pos', label: 'POS' });
+        if (this.isManager()) nav.push({ key: 'manager', label: 'Manager Dashboard' });
+        if (this.isDeveloper()) nav.push({ key: 'developer', label: 'Developer' });
+        if (!nav.find(item => item.key === this.state.currentView)) {
+          this.state.currentView = nav[0] ? nav[0].key : 'pos';
+        }
+        this.el.navButtons.innerHTML = nav.map(item => `<button type="button" class="${this.state.currentView === item.key ? 'active' : 'secondary'}" data-view="${item.key}">${item.label}</button>`).join('');
+        [...this.el.navButtons.querySelectorAll('button')].forEach(btn => btn.addEventListener('click', () => {
+          this.state.currentView = btn.dataset.view;
+          this.renderShell();
+        }));
+
+        this.el.posSection.classList.toggle('hidden', this.state.currentView !== 'pos');
+        this.el.managerSection.classList.toggle('hidden', this.state.currentView !== 'manager');
+        this.el.developerSection.classList.toggle('hidden', this.state.currentView !== 'developer');
+
+        this.renderMenu();
+        this.renderCart();
+        if (this.isManager()) this.renderManager();
+        if (this.isDeveloper()) this.renderDeveloper();
+      },
+
+      renderMenu() {
+        if (!this.canUsePOS()) return;
+        const selectedCategory = this.el.posCategoryFilter.value;
+        const categoryOptions = ['<option value="">All categories</option>']
+          .concat(this.state.categories.filter(c => c.enabled).map(c => `<option value="${c.id}">${c.name}</option>`));
+        this.el.posCategoryFilter.innerHTML = categoryOptions.join('');
+        this.el.posCategoryFilter.value = selectedCategory;
+        const query = (this.el.posSearch.value || '').toLowerCase();
+        const categoryId = this.el.posCategoryFilter.value;
+        const items = this.state.foodItems.filter(item => item.enabled)
+          .filter(item => !query || item.name.toLowerCase().includes(query))
+          .filter(item => !categoryId || String(item.category_id || '') === String(categoryId));
+        this.el.menuGrid.innerHTML = items.map(item => {
+          const price = Number(item.price);
+          const discount = Number(item.discount_percent || 0);
+          const effective = price - (price * discount / 100);
+          return `
+            <div class="menu-item">
+              <div>
+                <h4>${this.escape(item.name)}</h4>
+                <p class="muted">${this.escape(item.category_name || 'Uncategorized')} · ${this.escape(item.display_system)}</p>
+              </div>
+              <div>
+                <strong>${this.currency(effective)}</strong>
+                ${discount ? `<div class="muted">Discount ${discount}%</div>` : ''}
+              </div>
+              <button type="button" data-add-food="${item.id}">Add to Cart</button>
+            </div>
+          `;
+        }).join('') || '<div class="muted">No enabled food items found.</div>';
+        [...this.el.menuGrid.querySelectorAll('[data-add-food]')].forEach(btn => btn.addEventListener('click', () => this.addToCart(Number(btn.dataset.addFood))));
+      },
+
+      addToCart(foodId) {
+        const item = this.state.foodItems.find(entry => entry.id === foodId);
+        if (!item) return;
+        const cartItem = this.state.cart.find(entry => entry.id === foodId);
+        if (cartItem) cartItem.quantity += 1;
+        else this.state.cart.push({ id: item.id, name: item.name, price: Number(item.price), discount_percent: Number(item.discount_percent || 0), quantity: 1 });
+        this.renderCart();
+      },
+
+      removeFromCart(foodId) {
+        this.state.cart = this.state.cart.filter(item => item.id !== foodId);
+        this.renderCart();
+      },
+
+      setCartQty(foodId, qty) {
+        const item = this.state.cart.find(entry => entry.id === foodId);
+        if (!item) return;
+        item.quantity = Math.max(1, Number(qty || 1));
+        this.renderCart();
+      },
+
+      cartTotals() {
+        const subtotal = this.state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const discount = this.state.cart.reduce((sum, item) => sum + ((item.price * item.discount_percent / 100) * item.quantity), 0);
+        const tips = Number(this.el.tipsInput.value || 0);
+        const total = subtotal - discount + tips;
+        const paid = Number(this.el.amountPaid.value || 0);
+        const change = Math.max(0, paid - total);
+        return { subtotal, discount, tips, total, paid, change };
+      },
+
+      renderCart() {
+        if (!this.canUsePOS()) return;
+        const totals = this.cartTotals();
+        this.el.cartTable.innerHTML = this.state.cart.map(item => {
+          const total = (item.price - (item.price * item.discount_percent / 100)) * item.quantity;
+          return `
+            <tr>
+              <td>${this.escape(item.name)}<div class="muted">${item.discount_percent ? item.discount_percent + '% off' : 'Regular price'}</div></td>
+              <td><input type="number" min="1" step="1" value="${item.quantity}" data-qty-food="${item.id}" style="max-width:72px;" /></td>
+              <td>${this.currency(total)}</td>
+              <td><button type="button" class="danger" data-remove-food="${item.id}">×</button></td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="4" class="muted">Cart is empty.</td></tr>';
+        [...this.el.cartTable.querySelectorAll('[data-remove-food]')].forEach(btn => btn.addEventListener('click', () => this.removeFromCart(Number(btn.dataset.removeFood))));
+        [...this.el.cartTable.querySelectorAll('[data-qty-food]')].forEach(input => input.addEventListener('input', () => this.setCartQty(Number(input.dataset.qtyFood), input.value)));
+
+        this.el.cartSubtotal.textContent = this.currency(totals.subtotal);
+        this.el.cartDiscount.textContent = this.currency(totals.discount);
+        this.el.cartTotal.textContent = this.currency(totals.total);
+        this.el.checkoutTotal.textContent = this.currency(totals.total);
+        this.el.changeDisplay.textContent = this.currency(totals.change);
+
+        const splitCount = Math.max(1, Number(this.el.splitCount.value || 1));
+        const base = totals.total / splitCount;
+        this.el.splitPreview.innerHTML = Array.from({ length: splitCount }).map((_, index) => `<div class="summary-row"><span>Split ${index + 1}</span><strong>${this.currency(base)}</strong></div>`).join('');
+        this.renderReceipt();
+      },
+
+      async placeOrder() {
+        if (!this.state.cart.length) {
+          this.showNotice('main', 'Add food items before placing an order.', 'error');
+          return;
+        }
+        try {
+          const totals = this.cartTotals();
+          const splitCount = Math.max(1, Number(this.el.splitCount.value || 1));
+          const payload = {
+            table_number: this.el.tableNumber.value.trim(),
+            payment_method: this.el.paymentMethod.value,
+            amount_paid: totals.paid,
+            tips: totals.tips,
+            split_count: splitCount,
+            items: this.state.cart.map(item => ({ food_item_id: item.id, quantity: item.quantity }))
+          };
+          const order = await this.api('/api/orders', { method: 'POST', body: JSON.stringify(payload) });
+          this.state.lastReceipt = order;
+          this.state.cart = [];
+          this.el.amountPaid.value = '0';
+          this.el.tipsInput.value = '0';
+          this.el.splitCount.value = '1';
+          this.el.tableNumber.value = '';
+          await this.refreshData();
+          this.renderReceipt();
+          this.showNotice('main', `Order #${order.id} placed successfully.`);
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      renderReceipt() {
+        const receipt = this.state.lastReceipt;
+        if (!receipt) {
+          this.el.receiptPanel.classList.add('hidden');
+          return;
+        }
+        this.el.receiptPanel.classList.remove('hidden');
+        this.el.receiptContent.innerHTML = `
+          <h3>${this.state.settings.restaurant_name || 'Restaurant POS'}</h3>
+          <p>${new Date(receipt.created_at).toLocaleString()}</p>
+          <p><strong>Receipt #${receipt.id}</strong></p>
+          <p>Server: ${this.escape(receipt.waiter_username || this.state.user.username)}</p>
+          <p>Table / Reference: ${this.escape(receipt.table_number || 'Walk-in')}</p>
+          <hr />
+          ${receipt.items.map(item => `<div class="summary-row"><span>${this.escape(item.food_name)} × ${item.quantity}</span><strong>${this.currency((item.price - (item.price * item.discount_percent / 100)) * item.quantity)}</strong></div>`).join('')}
+          <hr />
+          <div class="summary-row"><span>Subtotal</span><strong>${this.currency(receipt.subtotal)}</strong></div>
+          <div class="summary-row"><span>Discount</span><strong>${this.currency(receipt.discount)}</strong></div>
+          <div class="summary-row"><span>Tips</span><strong>${this.currency(receipt.tips)}</strong></div>
+          <div class="summary-row"><span>Total</span><strong>${this.currency(receipt.total)}</strong></div>
+          <div class="summary-row"><span>Paid</span><strong>${this.currency(receipt.amount_paid)}</strong></div>
+          <div class="summary-row"><span>Change</span><strong>${this.currency(receipt.change_given)}</strong></div>
+          <p><strong>Payment:</strong> ${receipt.payment_method}</p>
+          <p><strong>Split bills:</strong></p>
+          ${(receipt.splitBills || []).map(bill => `<div class="summary-row"><span>Split ${bill.split_number}</span><strong>${this.currency(bill.amount)}</strong></div>`).join('') || '<p>Single bill</p>'}
+          <hr />
+          <p style="text-align:center;">Thank you for dining with us.</p>
+        `;
+      },
+
+      renderManager() {
+        const tabs = [
+          { key: 'users', label: 'User Management' },
+          { key: 'settings', label: 'Restaurant Settings' },
+          { key: 'food', label: 'Food Item Management' },
+          { key: 'inventory', label: 'Inventory Management' },
+          { key: 'reports', label: 'Sales Reports' }
+        ];
+        if (!tabs.find(tab => tab.key === this.state.managerTab)) this.state.managerTab = 'users';
+        this.el.managerTabs.innerHTML = tabs.map(tab => `<button type="button" class="${this.state.managerTab === tab.key ? 'active' : 'secondary'}" data-tab="${tab.key}">${tab.label}</button>`).join('');
+        [...this.el.managerTabs.querySelectorAll('button')].forEach(btn => btn.addEventListener('click', () => {
+          this.state.managerTab = btn.dataset.tab;
+          this.renderManager();
+        }));
+
+        const panels = {
+          users: this.usersPanel(),
+          settings: this.settingsPanel(),
+          food: this.foodPanel(),
+          inventory: this.inventoryPanel(),
+          reports: this.reportsPanel()
+        };
+        this.el.managerPanels.innerHTML = panels[this.state.managerTab] || '';
+        this.bindManagerPanelEvents();
+      },
+
+      usersPanel() {
+        return `
+          <div class="card">
+            <div class="toolbar"><h3 style="margin:0;">Users</h3><button type="button" id="openUserDialogBtn">Add User</button></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead>
+                <tbody>
+                  ${this.state.users.map(user => `
+                    <tr>
+                      <td>${this.escape(user.username)}</td>
+                      <td>${this.escape(user.role)}</td>
+                      <td><span class="status-chip ${user.enabled ? 'active' : 'inactive'}">${user.enabled ? 'Enabled' : 'Disabled'}</span></td>
+                      <td>${new Date(user.created_at).toLocaleString()}</td>
+                      <td>
+                        <button type="button" class="secondary" data-edit-user="${user.id}">Edit</button>
+                        <button type="button" class="danger" data-delete-user="${user.id}">Delete</button>
+                      </td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="5">No users found.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      },
+
+      settingsPanel() {
+        return `
+          <div class="card">
+            <h3 style="margin-top:0;">Restaurant Settings</h3>
+            <form id="settingsForm" class="grid">
+              <div class="two-col">
+                <div><label>Restaurant Name</label><input id="settingsName" value="${this.escape(this.state.settings.restaurant_name || '')}" required /></div>
+                <div><label>Currency</label><input id="settingsCurrency" value="${this.escape(this.state.settings.currency || 'USD')}" maxlength="3" required /></div>
+              </div>
+              <div class="footer-actions"><button type="submit">Save Settings</button></div>
+            </form>
+          </div>
+        `;
+      },
+
+      foodPanel() {
+        const categoryRows = this.state.categories.map(category => `
+          <tr>
+            <td>${this.escape(category.name)}</td>
+            <td>${this.escape(category.display_system)}</td>
+            <td>${category.enabled ? 'Enabled' : 'Disabled'}</td>
+            <td>
+              <button type="button" class="secondary" data-edit-category="${category.id}">Edit</button>
+              <button type="button" class="danger" data-delete-category="${category.id}">Delete</button>
+            </td>
+          </tr>`).join('') || '<tr><td colspan="4">No categories found.</td></tr>';
+        const foodRows = this.state.foodItems.map(item => `
+          <tr>
+            <td>${this.escape(item.name)}</td>
+            <td>${this.escape(item.category_name || '-')}</td>
+            <td>${this.currency(item.price)}</td>
+            <td>${item.discount_percent}%</td>
+            <td>${this.escape(item.display_system)}</td>
+            <td>${item.enabled ? 'Enabled' : 'Disabled'}</td>
+            <td>
+              <button type="button" class="secondary" data-edit-food="${item.id}">Edit</button>
+              <button type="button" class="danger" data-delete-food="${item.id}">Delete</button>
+            </td>
+          </tr>`).join('') || '<tr><td colspan="7">No food items found.</td></tr>';
+        return `
+          <div class="grid">
+            <div class="card">
+              <div class="toolbar"><h3 style="margin:0;">Categories</h3><button type="button" id="openCategoryDialogBtn">Add Category</button></div>
+              <div class="table-wrap"><table><thead><tr><th>Name</th><th>Display</th><th>Status</th><th></th></tr></thead><tbody>${categoryRows}</tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="toolbar"><h3 style="margin:0;">Food Items</h3><button type="button" id="openFoodDialogBtn">Add Food Item</button></div>
+              <div class="inline-form">
+                <div><label for="foodSearch">Search</label><input id="foodSearch" placeholder="Search food items" /></div>
+              </div>
+              <div class="table-wrap"><table><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Display</th><th>Status</th><th></th></tr></thead><tbody id="foodRows">${foodRows}</tbody></table></div>
+            </div>
+          </div>
+        `;
+      },
+
+      inventoryPanel() {
+        return `
+          <div class="card">
+            <div class="toolbar"><h3 style="margin:0;">Inventory</h3><button type="button" id="openInventoryDialogBtn">Add Inventory</button></div>
+            <div class="inline-form">
+              <div><label for="inventorySearch">Search</label><input id="inventorySearch" placeholder="Search inventory" /></div>
+              <div><label for="inventoryDateFilter">Date</label><input id="inventoryDateFilter" type="date" value="${this.today()}" /></div>
+              <div style="align-self:end;"><button type="button" class="secondary" id="inventoryRefreshBtn">Refresh</button></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Food Item</th><th>Beginning</th><th>In</th><th>Out</th><th>Ending</th><th>Date</th><th></th></tr></thead>
+                <tbody id="inventoryRows">
+                  ${this.state.inventory.map(item => `
+                    <tr>
+                      <td>${this.escape(item.food_name)}</td>
+                      <td>${item.beginning_stock}</td>
+                      <td>${item.stock_in}</td>
+                      <td>${item.stock_out}</td>
+                      <td>${item.ending_stock}</td>
+                      <td>${item.date}</td>
+                      <td>
+                        <button type="button" class="secondary" data-edit-inventory="${item.id}">Edit</button>
+                        <button type="button" class="danger" data-delete-inventory="${item.id}">Delete</button>
+                      </td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="7">No inventory records found.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      },
+
+      reportsPanel() {
+        const report = this.state.reports || { summary: {}, topItems: [], payments: [], range: {} };
+        return `
+          <div class="grid">
+            <div class="card">
+              <div class="toolbar">
+                <h3 style="margin:0;">Sales Reports</h3>
+                <div class="top-actions">
+                  <button type="button" class="secondary" data-report-type="daily">Daily</button>
+                  <button type="button" class="secondary" data-report-type="weekly">Weekly</button>
+                  <button type="button" class="secondary" data-report-type="monthly">Monthly</button>
+                </div>
+              </div>
+              <p class="muted">Range: ${report.range.startDate || '-'} to ${report.range.endDate || '-'}</p>
+              <div class="stats-grid">
+                <div class="stat"><h4>Orders</h4><p>${report.summary.orders_count || 0}</p></div>
+                <div class="stat"><h4>Sales</h4><p>${this.currency(report.summary.total || 0)}</p></div>
+                <div class="stat"><h4>Discounts</h4><p>${this.currency(report.summary.discount || 0)}</p></div>
+                <div class="stat"><h4>Tips</h4><p>${this.currency(report.summary.tips || 0)}</p></div>
+              </div>
+            </div>
+            <div class="two-col">
+              <div class="card">
+                <h3 style="margin-top:0;">Top Items</h3>
+                <div class="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Sales</th></tr></thead><tbody>${report.topItems.map(item => `<tr><td>${item.name}</td><td>${item.qty}</td><td>${this.currency(item.sales)}</td></tr>`).join('') || '<tr><td colspan="3">No data.</td></tr>'}</tbody></table></div>
+              </div>
+              <div class="card">
+                <h3 style="margin-top:0;">Payments</h3>
+                <div class="table-wrap"><table><thead><tr><th>Method</th><th>Count</th><th>Total</th></tr></thead><tbody>${report.payments.map(item => `<tr><td>${item.payment_method}</td><td>${item.count}</td><td>${this.currency(item.total)}</td></tr>`).join('') || '<tr><td colspan="3">No data.</td></tr>'}</tbody></table></div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      bindManagerPanelEvents() {
+        const userBtn = document.getElementById('openUserDialogBtn');
+        if (userBtn) userBtn.addEventListener('click', () => this.openUserDialog());
+        const settingsForm = document.getElementById('settingsForm');
+        if (settingsForm) settingsForm.addEventListener('submit', (e) => this.saveSettings(e));
+        const categoryBtn = document.getElementById('openCategoryDialogBtn');
+        if (categoryBtn) categoryBtn.addEventListener('click', () => this.openCategoryDialog());
+        const foodBtn = document.getElementById('openFoodDialogBtn');
+        if (foodBtn) foodBtn.addEventListener('click', () => this.openFoodDialog());
+        const inventoryBtn = document.getElementById('openInventoryDialogBtn');
+        if (inventoryBtn) inventoryBtn.addEventListener('click', () => this.openInventoryDialog());
+        const inventoryRefreshBtn = document.getElementById('inventoryRefreshBtn');
+        if (inventoryRefreshBtn) inventoryRefreshBtn.addEventListener('click', () => this.filterInventory());
+        const inventorySearch = document.getElementById('inventorySearch');
+        if (inventorySearch) inventorySearch.addEventListener('input', () => this.filterInventoryRows());
+        const foodSearch = document.getElementById('foodSearch');
+        if (foodSearch) foodSearch.addEventListener('input', () => this.filterFoodRows());
+
+        [...document.querySelectorAll('[data-edit-user]')].forEach(btn => btn.addEventListener('click', () => this.openUserDialog(Number(btn.dataset.editUser))));
+        [...document.querySelectorAll('[data-delete-user]')].forEach(btn => btn.addEventListener('click', () => this.deleteUser(Number(btn.dataset.deleteUser))));
+        [...document.querySelectorAll('[data-edit-category]')].forEach(btn => btn.addEventListener('click', () => this.openCategoryDialog(Number(btn.dataset.editCategory))));
+        [...document.querySelectorAll('[data-delete-category]')].forEach(btn => btn.addEventListener('click', () => this.deleteCategory(Number(btn.dataset.deleteCategory))));
+        [...document.querySelectorAll('[data-edit-food]')].forEach(btn => btn.addEventListener('click', () => this.openFoodDialog(Number(btn.dataset.editFood))));
+        [...document.querySelectorAll('[data-delete-food]')].forEach(btn => btn.addEventListener('click', () => this.deleteFood(Number(btn.dataset.deleteFood))));
+        [...document.querySelectorAll('[data-edit-inventory]')].forEach(btn => btn.addEventListener('click', () => this.openInventoryDialog(Number(btn.dataset.editInventory))));
+        [...document.querySelectorAll('[data-delete-inventory]')].forEach(btn => btn.addEventListener('click', () => this.deleteInventory(Number(btn.dataset.deleteInventory))));
+        [...document.querySelectorAll('[data-report-type]')].forEach(btn => btn.addEventListener('click', () => this.loadReports(btn.dataset.reportType)));
+      },
+
+      renderDeveloper() {
+        const subscription = this.state.subscription;
+        if (subscription) {
+          const expired = new Date(subscription.expiry_date) < new Date();
+          const expiryLabel = new Date(subscription.expiry_date).toLocaleDateString();
+          this.el.developerSubscriptionCard.innerHTML = `
+            <div class="stats-grid">
+              <div class="stat"><h4>Plan</h4><p>${this.escape(subscription.plan_name)}</p></div>
+              <div class="stat"><h4>Expiry Date</h4><p style="color:${expired ? '#dc2626' : 'inherit'};font-weight:${expired ? '700' : 'inherit'}">${expiryLabel}${expired ? ' ⚠ EXPIRED' : ''}</p></div>
+              <div class="stat"><h4>Updated By</h4><p>${subscription.created_by_username || '-'}</p></div>
+            </div>
+          `;
+        } else {
+          this.el.developerSubscriptionCard.innerHTML = '<p>No subscription record found.</p>';
+        }
+      },
+
+      openDialog(id) {
+        document.getElementById(id).showModal();
+      },
+
+      closeDialog(id) {
+        document.getElementById(id).close();
+      },
+
+      openUserDialog(id = null) {
+        const user = this.state.users.find(entry => entry.id === id);
+        document.getElementById('userDialogTitle').textContent = user ? 'Edit User' : 'Add User';
+        document.getElementById('userId').value = user ? user.id : '';
+        document.getElementById('userUsername').value = user ? user.username : '';
+        document.getElementById('userRole').value = user ? user.role : 'waiter';
+        document.getElementById('userPassword').value = '';
+        document.getElementById('userEnabled').value = String(user ? user.enabled : true);
+        this.openDialog('userDialog');
+      },
+
+      async saveUser(event) {
+        event.preventDefault();
+        const id = document.getElementById('userId').value;
+        const payload = {
+          username: document.getElementById('userUsername').value.trim(),
+          password: document.getElementById('userPassword').value,
+          role: document.getElementById('userRole').value,
+          enabled: document.getElementById('userEnabled').value === 'true'
+        };
+        if (!id && !payload.password) {
+          this.showNotice('main', 'Password is required for new users.', 'error');
+          return;
+        }
+        if (!payload.password) delete payload.password;
+        try {
+          await this.api(id ? `/api/users/${id}` : '/api/users', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+          this.closeDialog('userDialog');
+          await this.refreshData();
+          this.showNotice('main', `User ${id ? 'updated' : 'created'} successfully.`);
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async deleteUser(id) {
+        if (!confirm('Delete this user?')) return;
+        try {
+          await this.api(`/api/users/${id}`, { method: 'DELETE' });
+          await this.refreshData();
+          this.showNotice('main', 'User deleted.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async saveSettings(event) {
+        event.preventDefault();
+        try {
+          this.state.settings = await this.api('/api/settings', {
+            method: 'PUT',
+            body: JSON.stringify({
+              restaurant_name: document.getElementById('settingsName').value.trim(),
+              currency: document.getElementById('settingsCurrency').value.trim().toUpperCase()
+            })
+          });
+          this.renderShell();
+          this.showNotice('main', 'Settings updated.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      openCategoryDialog(id = null) {
+        const category = this.state.categories.find(entry => entry.id === id);
+        document.getElementById('categoryDialogTitle').textContent = category ? 'Edit Category' : 'Add Category';
+        document.getElementById('categoryId').value = category ? category.id : '';
+        document.getElementById('categoryName').value = category ? category.name : '';
+        document.getElementById('categoryDisplay').value = category ? category.display_system : 'kitchen';
+        document.getElementById('categoryEnabled').value = String(category ? category.enabled : true);
+        this.openDialog('categoryDialog');
+      },
+
+      async saveCategory(event) {
+        event.preventDefault();
+        const id = document.getElementById('categoryId').value;
+        const payload = {
+          name: document.getElementById('categoryName').value.trim(),
+          display_system: document.getElementById('categoryDisplay').value,
+          enabled: document.getElementById('categoryEnabled').value === 'true'
+        };
+        try {
+          await this.api(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+          this.closeDialog('categoryDialog');
+          await this.refreshData();
+          this.showNotice('main', `Category ${id ? 'updated' : 'created'} successfully.`);
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async deleteCategory(id) {
+        if (!confirm('Delete this category?')) return;
+        try {
+          await this.api(`/api/categories/${id}`, { method: 'DELETE' });
+          await this.refreshData();
+          this.showNotice('main', 'Category deleted.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      populateCategorySelects() {
+        const options = ['<option value="">Uncategorized</option>'].concat(this.state.categories.map(category => `<option value="${category.id}">${this.escape(category.name)}</option>`));
+        document.getElementById('foodCategory').innerHTML = options.join('');
+      },
+
+      openFoodDialog(id = null) {
+        const item = this.state.foodItems.find(entry => entry.id === id);
+        this.populateCategorySelects();
+        document.getElementById('foodDialogTitle').textContent = item ? 'Edit Food Item' : 'Add Food Item';
+        document.getElementById('foodId').value = item ? item.id : '';
+        document.getElementById('foodName').value = item ? item.name : '';
+        document.getElementById('foodPrice').value = item ? item.price : '';
+        document.getElementById('foodDiscount').value = item ? item.discount_percent : 0;
+        document.getElementById('foodCategory').value = item && item.category_id ? item.category_id : '';
+        document.getElementById('foodDisplay').value = item ? item.display_system : 'kitchen';
+        document.getElementById('foodEnabled').value = String(item ? item.enabled : true);
+        this.openDialog('foodDialog');
+      },
+
+      async saveFood(event) {
+        event.preventDefault();
+        const id = document.getElementById('foodId').value;
+        const payload = {
+          name: document.getElementById('foodName').value.trim(),
+          price: Number(document.getElementById('foodPrice').value),
+          discount_percent: Number(document.getElementById('foodDiscount').value || 0),
+          category_id: document.getElementById('foodCategory').value || null,
+          display_system: document.getElementById('foodDisplay').value,
+          enabled: document.getElementById('foodEnabled').value === 'true'
+        };
+        try {
+          await this.api(id ? `/api/food-items/${id}` : '/api/food-items', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+          this.closeDialog('foodDialog');
+          await this.refreshData();
+          this.showNotice('main', `Food item ${id ? 'updated' : 'created'} successfully.`);
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async deleteFood(id) {
+        if (!confirm('Delete this food item?')) return;
+        try {
+          await this.api(`/api/food-items/${id}`, { method: 'DELETE' });
+          await this.refreshData();
+          this.showNotice('main', 'Food item deleted.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      populateFoodSelects() {
+        const options = this.state.foodItems.map(item => `<option value="${item.id}">${this.escape(item.name)}</option>`).join('');
+        document.getElementById('inventoryFood').innerHTML = options;
+      },
+
+      openInventoryDialog(id = null) {
+        const item = this.state.inventory.find(entry => entry.id === id);
+        this.populateFoodSelects();
+        document.getElementById('inventoryDialogTitle').textContent = item ? 'Edit Inventory' : 'Add Inventory';
+        document.getElementById('inventoryId').value = item ? item.id : '';
+        document.getElementById('inventoryFood').value = item ? item.food_item_id : (this.state.foodItems[0] ? this.state.foodItems[0].id : '');
+        document.getElementById('inventoryDate').value = item ? item.date : this.today();
+        document.getElementById('inventoryBeginning').value = item ? item.beginning_stock : 0;
+        document.getElementById('inventoryIn').value = item ? item.stock_in : 0;
+        document.getElementById('inventoryOut').value = item ? item.stock_out : 0;
+        document.getElementById('inventoryEnding').value = item ? item.ending_stock : 0;
+        this.openDialog('inventoryDialog');
+        this.updateInventoryEnding();
+      },
+
+      updateInventoryEnding() {
+        const beginning = Number(document.getElementById('inventoryBeginning').value || 0);
+        const stockIn = Number(document.getElementById('inventoryIn').value || 0);
+        const stockOut = Number(document.getElementById('inventoryOut').value || 0);
+        document.getElementById('inventoryEnding').value = (beginning + stockIn - stockOut).toFixed(2);
+      },
+
+      async saveInventory(event) {
+        event.preventDefault();
+        const id = document.getElementById('inventoryId').value;
+        const payload = {
+          food_item_id: Number(document.getElementById('inventoryFood').value),
+          date: document.getElementById('inventoryDate').value,
+          beginning_stock: Number(document.getElementById('inventoryBeginning').value || 0),
+          stock_in: Number(document.getElementById('inventoryIn').value || 0),
+          stock_out: Number(document.getElementById('inventoryOut').value || 0)
+        };
+        try {
+          await this.api(id ? `/api/inventory/${id}` : '/api/inventory', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+          this.closeDialog('inventoryDialog');
+          await this.filterInventory();
+          this.showNotice('main', `Inventory ${id ? 'updated' : 'created'} successfully.`);
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async deleteInventory(id) {
+        if (!confirm('Delete this inventory record?')) return;
+        try {
+          await this.api(`/api/inventory/${id}`, { method: 'DELETE' });
+          await this.filterInventory();
+          this.showNotice('main', 'Inventory deleted.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      async filterInventory() {
+        const date = document.getElementById('inventoryDateFilter').value || this.today();
+        try {
+          this.state.inventory = await this.api(`/api/inventory?date=${date}`);
+          this.renderManager();
+          const inventoryDateFilter = document.getElementById('inventoryDateFilter');
+          if (inventoryDateFilter) inventoryDateFilter.value = date;
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      filterInventoryRows() {
+        const q = (document.getElementById('inventorySearch').value || '').toLowerCase();
+        const rows = document.querySelectorAll('#inventoryRows tr');
+        rows.forEach(row => {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+      },
+
+      filterFoodRows() {
+        const q = (document.getElementById('foodSearch').value || '').toLowerCase();
+        const rows = document.querySelectorAll('#foodRows tr');
+        rows.forEach(row => {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+      },
+
+      async loadReports(type = 'daily') {
+        try {
+          this.state.reports = await this.api(`/api/reports/${type}`);
+          if (this.isManager()) this.renderManager();
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      openSubscriptionDialog() {
+        const current = this.state.subscription;
+        document.getElementById('subscriptionPlan').value = current ? current.plan_name : 'Starter';
+        document.getElementById('subscriptionExpiry').value = current ? String(current.expiry_date).slice(0, 10) : this.today();
+        this.openDialog('subscriptionDialog');
+      },
+
+      async saveSubscription(event) {
+        event.preventDefault();
+        const payload = {
+          plan_name: document.getElementById('subscriptionPlan').value.trim(),
+          expiry_date: document.getElementById('subscriptionExpiry').value
+        };
+        try {
+          this.state.subscription = await this.api('/api/subscription', {
+            method: this.state.subscription ? 'PUT' : 'POST',
+            body: JSON.stringify(payload)
+          });
+          this.closeDialog('subscriptionDialog');
+          await this.refreshData();
+          this.showNotice('main', 'Subscription updated.');
+        } catch (error) {
+          this.showNotice('main', error.message, 'error');
+        }
+      },
+
+      escape(value) {
+        return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+      }
+    };
+
+    window.app = app;
+    app.init();
+  </script>
+</body>
+</html>
